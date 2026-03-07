@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030305;
+  --foreground: #e2e8f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-float-delayed { animation: float 6s ease-in-out 2s infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.8s ease-out forwards; }
+
+.newsletter-preview {
+  max-height: 600px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #1a1a2e;
+}
+
+.newsletter-preview::-webkit-scrollbar { width: 6px; }
+.newsletter-preview::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+.newsletter-preview::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 3px; }
