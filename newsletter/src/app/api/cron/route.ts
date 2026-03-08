@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNewsletter } from "@/lib/gemini";
+import { ingestNews } from "@/lib/news-ingester";
 import { sendBulkEmails } from "@/lib/mailer";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -12,9 +13,18 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Generate newsletter
-    const generated = await generateNewsletter();
+    // Step 1: Ingest real news from RSS feeds
+    console.log("Ingesting news from RSS feeds...");
+    const news = await ingestNews();
+    console.log(
+      `Ingested: ${news.techAI.length} tech/AI, ${news.devTools.length} dev, ${news.startups.length} startups`
+    );
 
+    // Step 2: Generate newsletter with Gemini (curates news + generates image prompts)
+    console.log("Generating newsletter with Gemini...");
+    const generated = await generateNewsletter(news);
+
+    // Step 3: Save to database
     const newsletter = await prisma.newsletter.create({
       data: {
         subject: generated.subject,
@@ -23,9 +33,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Get active subscribers
+    // Step 4: Send to all confirmed subscribers
     const subscribers = await prisma.subscriber.findMany({
-      where: { active: true },
+      where: { active: true, confirmed: true },
       select: { email: true, token: true },
     });
 
@@ -39,6 +49,7 @@ export async function GET(req: NextRequest) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
 
+    console.log(`Sending to ${subscribers.length} subscribers...`);
     const results = await sendBulkEmails(
       subscribers,
       newsletter.subject,
@@ -56,6 +67,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       message: `Newsletter generado y enviado a ${sent} suscriptores`,
       newsletterId: newsletter.id,
+      newsIngested: {
+        techAI: news.techAI.length,
+        devTools: news.devTools.length,
+        startups: news.startups.length,
+      },
     });
   } catch (error) {
     console.error("Cron error:", error);

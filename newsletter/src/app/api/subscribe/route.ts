@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendConfirmationEmail } from "@/lib/mailer";
+
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,11 +19,18 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       if (!existing.active) {
-        await prisma.subscriber.update({
+        const updated = await prisma.subscriber.update({
           where: { email },
-          data: { active: true, frequency: frequency || "weekly", name },
+          data: { active: true, confirmed: false, frequency: frequency || "weekly", name },
         });
-        return NextResponse.json({ message: "Te has re-suscrito exitosamente" });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
+        await sendConfirmationEmail(email, name, updated.token, appUrl);
+        return NextResponse.json({ message: "Te enviamos un email de confirmacion" });
+      }
+      if (!existing.confirmed) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
+        await sendConfirmationEmail(email, name, existing.token, appUrl);
+        return NextResponse.json({ message: "Te reenviamos el email de confirmacion" });
       }
       return NextResponse.json(
         { error: "Este email ya esta suscrito" },
@@ -28,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.subscriber.create({
+    const subscriber = await prisma.subscriber.create({
       data: {
         email,
         name: name || null,
@@ -36,7 +46,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: "Suscripcion exitosa" });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
+    await sendConfirmationEmail(email, name, subscriber.token, appUrl);
+
+    return NextResponse.json({ message: "Te enviamos un email de confirmacion. Revisa tu bandeja de entrada." });
   } catch (error) {
     console.error("Subscribe error:", error);
     return NextResponse.json(

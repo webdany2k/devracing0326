@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNewsletter } from "@/lib/gemini";
+import { ingestNews } from "@/lib/news-ingester";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -11,7 +12,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const newsletter = await generateNewsletter();
+    const news = await ingestNews();
+    const newsletter = await generateNewsletter(news);
 
     const saved = await prisma.newsletter.create({
       data: {
@@ -25,6 +27,11 @@ export async function POST(req: NextRequest) {
       message: "Newsletter generado",
       id: saved.id,
       subject: saved.subject,
+      newsIngested: {
+        techAI: news.techAI.length,
+        devTools: news.devTools.length,
+        startups: news.startups.length,
+      },
     });
   } catch (error) {
     console.error("Generate error:", error);

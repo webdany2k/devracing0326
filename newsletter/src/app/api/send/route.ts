@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get active subscribers
+    // Get active and confirmed subscribers
     const subscribers = await prisma.subscriber.findMany({
-      where: { active: true },
+      where: { active: true, confirmed: true },
       select: { email: true, token: true },
     });
 

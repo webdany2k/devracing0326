@@ -97,13 +97,13 @@ export default function Home() {
 
       {/* Hero */}
       <main className="relative z-10 max-w-6xl mx-auto px-6">
-        <section className="pt-20 pb-16 lg:pt-32 lg:pb-24">
+        <section className="pt-8 pb-16 lg:pt-12 lg:pb-24">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left - Copy */}
             <div className="animate-slide-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm mb-8">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                Newsletter semanal gratuito
+                Newsletter gratuito
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6">
@@ -119,9 +119,9 @@ export default function Home() {
               </h1>
 
               <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-lg">
-                Cada semana, recibe un resumen curado con las noticias mas
+                Recibe un resumen curado con las noticias mas
                 importantes de tecnologia, tips de desarrollo y el pulso del
-                ecosistema startup en Mexico y Silicon Valley.
+                ecosistema startup en Mexico y Silicon Valley. Tu eliges: diario o semanal.
               </p>
 
               {/* Features */}
@@ -349,7 +349,7 @@ function NewsletterPlaceholder() {
     <div className="space-y-6">
       <div className="text-center p-6 rounded-xl bg-gradient-to-r from-indigo-600/20 to-violet-600/20">
         <h3 className="text-lg font-bold text-indigo-300 mb-1">TechPulse MX</h3>
-        <p className="text-xs text-slate-400">Tu newsletter semanal de tecnologia</p>
+        <p className="text-xs text-slate-400">Tu newsletter de tecnologia</p>
       </div>
       {[1, 2, 3].map((i) => (
         <div key={i} className="space-y-3">
