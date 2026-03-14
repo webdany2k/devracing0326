@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Te enviamos un email de confirmacion. Revisa tu bandeja de entrada." });
   } catch (error) {
-    console.error("Subscribe error:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Subscribe error:", msg, error);
     return NextResponse.json(
       { error: "Error al procesar la suscripcion" },
       { status: 500 }

@@ -13,7 +13,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const news = await ingestNews();
-    const newsletter = await generateNewsletter(news);
+
+    const pastNewsletters = await prisma.newsletter.findMany({
+      select: { subject: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 7,
+    });
+
+    const newsletter = await generateNewsletter(news, pastNewsletters);
 
     const saved = await prisma.newsletter.create({
       data: {

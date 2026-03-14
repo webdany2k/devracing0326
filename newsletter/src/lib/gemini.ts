@@ -8,7 +8,12 @@ export function buildImageUrl(prompt: string, width = 640, height = 360): string
   return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true`;
 }
 
-export async function generateNewsletter(news?: IngestedNews): Promise<{
+export interface PastNewsletter {
+  subject: string;
+  createdAt: Date;
+}
+
+export async function generateNewsletter(news?: IngestedNews, pastNewsletters?: PastNewsletter[]): Promise<{
   subject: string;
   content: string;
   htmlContent: string;
@@ -24,9 +29,14 @@ export async function generateNewsletter(news?: IngestedNews): Promise<{
     ? formatNewsForPrompt(news)
     : "No se pudieron obtener noticias de fuentes RSS. Genera contenido basado en tendencias reales y actuales de la industria tech.";
 
+  const historyContext = pastNewsletters?.length
+    ? `\n## NEWSLETTERS ANTERIORES (EVITA REPETIR ESTOS TEMAS)\nEstos son los subjects de newsletters enviados recientemente. NO repitas los mismos temas, enfoques ni angulos. Busca noticias frescas y perspectivas diferentes:\n${pastNewsletters.map((n) => `- [${n.createdAt.toLocaleDateString("es-MX")}] ${n.subject}`).join("\n")}\n`
+    : "";
+
   const prompt = `Eres un editor experto de newsletters tecnologicos. Genera un newsletter completo para hoy ${today}.
 
 ${newsContext}
+${historyContext}
 
 INSTRUCCIONES:
 Usa las noticias reales proporcionadas arriba como base. Selecciona las mas relevantes e interesantes para cada seccion. NO inventes noticias, solo usa las proporcionadas. Si alguna seccion tiene pocas noticias, complementa con contexto real.
@@ -39,10 +49,23 @@ El newsletter debe tener 3 secciones:
 
 3. **Startup Digest - Mexico & Silicon Valley** (3-4 noticias): Selecciona las mas relevantes. Incluye montos de inversion cuando esten disponibles.
 
-Ademas, para cada SECCION genera un "imagePrompt" en ingles: una descripcion corta (max 15 palabras) para generar una imagen AI ilustrativa. Estilo: futurista, tecnologico, colores vibrantes sobre fondo oscuro. Ejemplos:
-- "Futuristic AI neural network glowing blue purple dark background"
-- "Developer coding holographic screen neon city night"
-- "Startup rocket launching Mexico City skyline digital art"
+Ademas, para cada SECCION genera un "imagePrompt" en ingles: una descripcion corta (max 15 palabras) para generar una imagen AI ilustrativa. IMPORTANTE: Varia el estilo artistico cada dia. Elige UN estilo diferente de esta lista para cada imagen (no repitas el mismo estilo entre secciones):
+- Isometrico 3D lowpoly
+- Ilustracion editorial flat design
+- Cyberpunk neon con lluvia
+- Acuarela digital abstracta
+- Collage retro-futurista
+- Pixel art detallado
+- Foto-realista cinematico
+- Arte lineal minimalista con acento de color
+- Estilo ukiyo-e japones futurista
+- Papercut layered 3D
+
+Ejemplos:
+- "Isometric 3D lowpoly AI brain processing data streams pastel colors"
+- "Cyberpunk neon rain developer typing holographic code dark alley"
+- "Flat design editorial illustration startup founders brainstorming colorful"
+- "Watercolor abstract robot hand reaching for human hand soft tones"
 
 IMPORTANTE:
 - Escribe en espanol
@@ -105,11 +128,20 @@ Para el htmlContent, usa inline styles compatibles con clientes de email:
     }
   }
 
+  const imageUrls: string[] = [];
   for (const [name, imagePrompt] of Object.entries(sectionMap)) {
     const imageUrl = buildImageUrl(imagePrompt, 600, 340);
+    imageUrls.push(imageUrl);
     const imageHtml = `<div style="margin: 16px 0; text-align: center;"><img src="${imageUrl}" alt="${imagePrompt}" style="width: 100%; max-width: 600px; height: auto; border-radius: 12px; display: block; margin: 0 auto;" /></div>`;
     html = html.replace(`<!-- IMAGE:${name} -->`, imageHtml);
   }
+
+  // Pre-warm images so they are cached when email clients request them
+  await Promise.allSettled(
+    imageUrls.map((url) =>
+      fetch(url, { signal: AbortSignal.timeout(30000) }).catch(() => {})
+    )
+  );
 
   return {
     subject: parsed.subject,
