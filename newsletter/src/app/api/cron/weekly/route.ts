@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runDailyCron } from "@/lib/cron-helpers";
+import { runWeeklyCron } from "@/lib/cron-helpers";
 
-// Backward-compatible: calls the daily cron logic.
-// Prefer /api/cron/daily and /api/cron/weekly for new integrations.
 export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
@@ -12,12 +10,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await runDailyCron();
+    const result = await runWeeklyCron();
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Cron error:", error);
+    console.error("Weekly cron error:", error);
     return NextResponse.json(
-      { error: "Error en cron job" },
+      { error: "Error en cron semanal" },
       { status: 500 }
     );
   }

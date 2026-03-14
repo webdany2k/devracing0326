@@ -41,7 +41,8 @@ export async function sendConfirmationEmail(
   email: string,
   name: string | null,
   token: string,
-  appUrl: string
+  appUrl: string,
+  frequency: string = "weekly"
 ) {
   const confirmUrl = `${appUrl}/api/confirm?token=${token}`;
   const html = `
@@ -72,7 +73,7 @@ export async function sendConfirmationEmail(
       </p>
     </div>
     <p style="color:#475569;font-size:11px;text-align:center;margin-top:16px;">
-      TechPulse MX - Tu dosis semanal de tech, AI y startups
+      TechPulse MX - Tu dosis ${frequency === "daily" ? "diaria" : "semanal"} de tech, AI y startups
     </p>
   </div>
 </body>

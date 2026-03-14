@@ -24,12 +24,12 @@ export async function POST(req: NextRequest) {
           data: { active: true, confirmed: false, frequency: frequency || "weekly", name },
         });
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
-        await sendConfirmationEmail(email, name, updated.token, appUrl);
+        await sendConfirmationEmail(email, name, updated.token, appUrl, frequency || "weekly");
         return NextResponse.json({ message: "Te enviamos un email de confirmacion" });
       }
       if (!existing.confirmed) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
-        await sendConfirmationEmail(email, name, existing.token, appUrl);
+        await sendConfirmationEmail(email, name, existing.token, appUrl, existing.frequency);
         return NextResponse.json({ message: "Te reenviamos el email de confirmacion" });
       }
       return NextResponse.json(
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
-    await sendConfirmationEmail(email, name, subscriber.token, appUrl);
+    await sendConfirmationEmail(email, name, subscriber.token, appUrl, frequency || "weekly");
 
     return NextResponse.json({ message: "Te enviamos un email de confirmacion. Revisa tu bandeja de entrada." });
   } catch (error) {

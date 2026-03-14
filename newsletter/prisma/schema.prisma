@@ -25,6 +25,7 @@ model Newsletter {
   subject     String
   content     String
   htmlContent String
+  type        String    @default("daily")
   sentAt      DateTime?
   createdAt   DateTime  @default(now())
 }

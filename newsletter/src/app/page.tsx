@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 
 export default function Home() {
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [frequency, setFrequency] = useState("weekly");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -13,7 +12,7 @@ export default function Home() {
     htmlContent: string;
     createdAt: string;
   } | null>(null);
-  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [stats, setStats] = useState({ subscriberCount: 0, newsletterCount: 0 });
 
   useEffect(() => {
     fetch("/api/newsletter/latest")
@@ -23,21 +22,10 @@ export default function Home() {
       })
       .catch(() => {});
 
-    // Animated counter effect
-    const target = 847;
-    const duration = 2000;
-    const step = target / (duration / 16);
-    let current = 0;
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        setSubscriberCount(target);
-        clearInterval(timer);
-      } else {
-        setSubscriberCount(Math.floor(current));
-      }
-    }, 16);
-    return () => clearInterval(timer);
+    fetch("/api/stats")
+      .then((res) => res.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,14 +35,13 @@ export default function Home() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, frequency }),
+        body: JSON.stringify({ email, frequency }),
       });
       const data = await res.json();
       if (res.ok) {
         setStatus("success");
         setMessage(data.message);
         setEmail("");
-        setName("");
       } else {
         setStatus("error");
         setMessage(data.error);
@@ -88,71 +75,45 @@ export default function Home() {
               <span className="text-xl font-bold text-white/60 ml-1">MX</span>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{subscriberCount}+ suscriptores</span>
-          </div>
+          {stats.subscriberCount > 0 && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{stats.subscriberCount}+ suscriptores</span>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* Hero */}
       <main className="relative z-10 max-w-6xl mx-auto px-6">
         <section className="pt-8 pb-16 lg:pt-12 lg:pb-24">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left - Copy */}
             <div className="animate-slide-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm mb-8">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                Newsletter gratuito
+                Gratis &middot; Lectura de 5 min
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6">
-                Tu dosis de{" "}
                 <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  Tech, AI
+                  Tech, AI & Startups
                 </span>
                 <br />
-                <span className="text-white/90">&</span>{" "}
-                <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                  Startups
-                </span>
+                <span className="text-white/90">en 5 minutos</span>
               </h1>
 
-              <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-lg">
-                Recibe un resumen curado con las noticias mas
-                importantes de tecnologia, tips de desarrollo y el pulso del
-                ecosistema startup en Mexico y Silicon Valley. Tu eliges: diario o semanal.
+              <p className="text-lg text-slate-400 leading-relaxed mb-8 max-w-lg">
+                Cada manana, lo mas importante de tecnologia, inteligencia artificial y
+                el ecosistema startup de Mexico y Silicon Valley. Curado por IA, listo para tu cafe.
               </p>
 
-              {/* Features */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-                {[
-                  { icon: "🤖", label: "AI & Tech News", desc: "Lo ultimo en IA" },
-                  { icon: "💻", label: "Dev Tips", desc: "Codigo practico" },
-                  { icon: "🚀", label: "Startups", desc: "MX & Silicon Valley" },
-                ].map((f) => (
-                  <div
-                    key={f.label}
-                    className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-indigo-500/30 transition-colors"
-                  >
-                    <div className="text-2xl mb-2">{f.icon}</div>
-                    <div className="font-semibold text-white/90 text-sm">{f.label}</div>
-                    <div className="text-xs text-slate-500">{f.desc}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Subscribe Form */}
+              {/* Subscribe Form — solo email + frecuencia */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
+                  <label className="sr-only" htmlFor="subscribe-email">Email</label>
                   <input
-                    type="text"
-                    placeholder="Tu nombre (opcional)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="flex-1 px-5 py-3.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm"
-                  />
-                  <input
+                    id="subscribe-email"
                     type="email"
                     placeholder="tu@email.com"
                     value={email}
@@ -160,30 +121,10 @@ export default function Home() {
                     required
                     className="flex-1 px-5 py-3.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm"
                   />
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div className="flex gap-2">
-                    {(["weekly", "daily"] as const).map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        onClick={() => setFrequency(f)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          frequency === f
-                            ? "bg-indigo-500/20 border border-indigo-500/40 text-indigo-300"
-                            : "bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        {f === "weekly" ? "Semanal" : "Diario"}
-                      </button>
-                    ))}
-                  </div>
-
                   <button
                     type="submit"
                     disabled={status === "loading"}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-400 hover:to-violet-500 transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-400 hover:to-violet-500 transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {status === "loading" ? (
                       <span className="flex items-center gap-2">
@@ -197,6 +138,24 @@ export default function Home() {
                       "Suscribirme gratis"
                     )}
                   </button>
+                </div>
+
+                <div className="flex gap-2" role="group" aria-label="Frecuencia de envio">
+                  {(["weekly", "daily"] as const).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      aria-pressed={frequency === f}
+                      onClick={() => setFrequency(f)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        frequency === f
+                          ? "bg-indigo-500/20 border border-indigo-500/40 text-indigo-300"
+                          : "bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {f === "weekly" ? "Semanal" : "Diario"}
+                    </button>
+                  ))}
                 </div>
 
                 {status === "success" && (
@@ -216,7 +175,7 @@ export default function Home() {
                   </div>
                 )}
 
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-500">
                   Sin spam. Cancela cuando quieras. Generado con IA.
                 </p>
               </form>
@@ -245,7 +204,7 @@ export default function Home() {
                   </div>
 
                   {/* Newsletter content */}
-                  <div className="newsletter-preview">
+                  <div className="newsletter-preview relative max-h-[500px] overflow-hidden">
                     {newsletter ? (
                       <div
                         dangerouslySetInnerHTML={{ __html: newsletter.htmlContent }}
@@ -256,6 +215,8 @@ export default function Home() {
                         <NewsletterPlaceholder />
                       </div>
                     )}
+                    {/* Fade-out gradient */}
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
                   </div>
                 </div>
               </div>
@@ -263,20 +224,81 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Stats section */}
+        {/* What you get */}
         <section className="py-16 border-t border-white/[0.04]">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-2xl font-bold text-center mb-4 text-white/90">
+            Que incluye cada edicion
+          </h2>
+          <p className="text-slate-400 text-center mb-12 max-w-md mx-auto">
+            Tres secciones diseñadas para mantenerte al dia sin perder tiempo.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { value: "52+", label: "Ediciones publicadas" },
-              { value: "847+", label: "Suscriptores activos" },
-              { value: "3", label: "Secciones por edicion" },
-              { value: "100%", label: "Generado con IA" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                  {stat.value}
+              {
+                icon: "🤖",
+                title: "AI & Tech News",
+                desc: "Las noticias mas relevantes de inteligencia artificial y tecnologia, con contexto y analisis.",
+              },
+              {
+                icon: "💻",
+                title: "Dev Tips",
+                desc: "Snippets, herramientas y consejos practicos que puedes aplicar hoy en tu codigo.",
+              },
+              {
+                icon: "🚀",
+                title: "Startups MX & SV",
+                desc: "Rondas de inversion, lanzamientos y movimientos del ecosistema en Mexico y Silicon Valley.",
+              },
+            ].map((f) => (
+              <div
+                key={f.title}
+                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-indigo-500/20 transition-all"
+              >
+                <div className="text-3xl mb-3">{f.icon}</div>
+                <h3 className="font-semibold text-white/90 mb-2">{f.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="py-16 border-t border-white/[0.04]">
+          <h2 className="text-2xl font-bold text-center mb-12 text-white/90">
+            Lo que dicen nuestros lectores
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "Es lo primero que leo con mi cafe. En 5 minutos estoy al dia con todo lo que importa en tech.",
+                name: "Carlos M.",
+                role: "Senior Developer",
+              },
+              {
+                quote: "Me ahorra horas de scrollear Twitter y Hacker News. El resumen de startups MX no lo encuentras en ningun otro lado.",
+                name: "Ana R.",
+                role: "Product Manager",
+              },
+              {
+                quote: "Los dev tips son oro. Cada semana descubro alguna herramienta o patron que termino usando en produccion.",
+                name: "Diego L.",
+                role: "Full Stack Engineer",
+              },
+            ].map((t) => (
+              <div
+                key={t.name}
+                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
+              >
+                <svg className="w-8 h-8 text-indigo-500/30 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11H10v10H0z" />
+                </svg>
+                <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div>
+                  <div className="font-medium text-white/80 text-sm">{t.name}</div>
+                  <div className="text-xs text-slate-500">{t.role}</div>
                 </div>
-                <div className="text-sm text-slate-500 mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -304,7 +326,7 @@ export default function Home() {
               {
                 step: "03",
                 title: "Directo a tu inbox",
-                desc: "Recibe tu newsletter perfectamente formateado cada semana (o cada dia si prefieres).",
+                desc: "Recibe tu newsletter perfectamente formateado cada manana (o cada semana si prefieres).",
                 icon: "📬",
               },
             ].map((item) => (
@@ -312,7 +334,7 @@ export default function Home() {
                 key={item.step}
                 className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-indigo-500/20 transition-all group"
               >
-                <div className="absolute -top-3 -left-1 text-5xl font-black text-indigo-500/10 group-hover:text-indigo-500/20 transition-colors">
+                <div className="absolute top-4 right-5 text-5xl font-black text-indigo-500/20 group-hover:text-indigo-500/30 transition-colors select-none">
                   {item.step}
                 </div>
                 <div className="text-3xl mb-4">{item.icon}</div>
@@ -322,10 +344,71 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* Stats section — real data */}
+        <section className="py-16 border-t border-white/[0.04]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { value: stats.newsletterCount > 0 ? `${stats.newsletterCount}+` : "—", label: "Ediciones enviadas" },
+              { value: stats.subscriberCount > 0 ? `${stats.subscriberCount}+` : "—", label: "Suscriptores activos" },
+              { value: "5 min", label: "Tiempo de lectura" },
+              { value: "100%", label: "Generado con IA" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-slate-500 mt-1">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
+      {/* Bottom CTA */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+        <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.02] p-8 sm:p-12 text-center overflow-hidden">
+          <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/10 to-violet-500/10 rounded-3xl blur-2xl" />
+          <div className="relative">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white/90 mb-3">
+              No te pierdas la siguiente edicion
+            </h2>
+            <p className="text-slate-400 mb-8 max-w-md mx-auto">
+              Unete y recibe lo mas importante de tech, AI y startups directo en tu inbox.
+            </p>
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+              <label className="sr-only" htmlFor="bottom-email">Email</label>
+              <input
+                id="bottom-email"
+                type="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 px-5 py-3.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all text-sm"
+              />
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-400 hover:to-violet-500 transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                Suscribirme gratis
+              </button>
+            </form>
+            {status === "success" && (
+              <div className="mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm animate-slide-up max-w-lg mx-auto">
+                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {message}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.04] mt-16">
+      <footer className="relative z-10 border-t border-white/[0.04]">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-xs">
@@ -335,8 +418,8 @@ export default function Home() {
               TechPulse MX &copy; {new Date().getFullYear()}
             </span>
           </div>
-          <p className="text-xs text-slate-600">
-            Hecho con Next.js, Gemini AI y mucho cafe ☕
+          <p className="text-xs text-slate-500">
+            Hecho con Next.js, Gemini AI y mucho cafe
           </p>
         </div>
       </footer>

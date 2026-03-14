@@ -9,9 +9,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Get latest unsent newsletter
+    // Optional type filter: "daily" or "weekly"
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
+
+    // Get latest unsent newsletter (optionally filtered by type)
     const newsletter = await prisma.newsletter.findFirst({
-      where: { sentAt: null },
+      where: { sentAt: null, ...(type ? { type } : {}) },
       orderBy: { createdAt: "desc" },
     });
 
@@ -22,9 +26,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get active and confirmed subscribers
+    // Map newsletter type to subscriber frequency for filtering
+    const frequency = newsletter.type === "weekly" ? "weekly" : "daily";
+
+    // Get active and confirmed subscribers matching the newsletter frequency
     const subscribers = await prisma.subscriber.findMany({
-      where: { active: true, confirmed: true },
+      where: { active: true, confirmed: true, frequency },
       select: { email: true, token: true },
     });
 
