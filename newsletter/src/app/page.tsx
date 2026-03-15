@@ -2,6 +2,14 @@
 
 import { useState, useEffect } from "react";
 
+interface RecentNewsletter {
+  id: string;
+  subject: string;
+  type: string;
+  sentAt: string;
+  createdAt: string;
+}
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [frequency, setFrequency] = useState("weekly");
@@ -13,6 +21,7 @@ export default function Home() {
     createdAt: string;
   } | null>(null);
   const [stats, setStats] = useState({ subscriberCount: 0, newsletterCount: 0 });
+  const [recentNewsletters, setRecentNewsletters] = useState<RecentNewsletter[]>([]);
 
   useEffect(() => {
     fetch("/api/newsletter/latest")
@@ -25,6 +34,13 @@ export default function Home() {
     fetch("/api/stats")
       .then((res) => res.json())
       .then((data) => setStats(data))
+      .catch(() => {});
+
+    fetch("/api/newsletter/recent")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setRecentNewsletters(data);
+      })
       .catch(() => {});
   }, []);
 
@@ -52,6 +68,19 @@ export default function Home() {
     }
   }
 
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("es-MX", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  const typeLabel: Record<string, string> = {
+    daily: "Diario",
+    weekly: "Semanal",
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background effects */}
@@ -75,12 +104,20 @@ export default function Home() {
               <span className="text-xl font-bold text-white/60 ml-1">MX</span>
             </div>
           </div>
-          {stats.subscriberCount > 0 && (
-            <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{stats.subscriberCount}+ suscriptores</span>
-            </div>
-          )}
+          <div className="flex items-center gap-6">
+            <a href="#archivo" className="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors">
+              Archivo
+            </a>
+            <a href="#como-funciona" className="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors">
+              Como funciona
+            </a>
+            {stats.subscriberCount > 0 && (
+              <div className="hidden md:flex items-center gap-2 text-sm text-slate-400">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{stats.subscriberCount}+ suscriptores</span>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -92,23 +129,26 @@ export default function Home() {
             <div className="animate-slide-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-sm mb-8">
                 <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-                Gratis &middot; Lectura de 5 min
+                Gratis &middot; De lunes a viernes
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6">
+                <span className="text-white/90">5 minutos para ser</span>
+                <br />
                 <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  Tech, AI & Startups
+                  el mas informado
                 </span>
                 <br />
-                <span className="text-white/90">en 5 minutos</span>
+                <span className="text-white/90">de tu equipo</span>
               </h1>
 
               <p className="text-lg text-slate-400 leading-relaxed mb-8 max-w-lg">
-                Cada manana, lo mas importante de tecnologia, inteligencia artificial y
-                el ecosistema startup de Mexico y Silicon Valley. Curado por IA, listo para tu cafe.
+                Cada manana te resumimos lo que importa en tech, AI y startups
+                para que llegues a la oficina sabiendo de que hablar.
+                Curado por IA. Listo para tu cafe.
               </p>
 
-              {/* Subscribe Form — solo email + frecuencia */}
+              {/* Subscribe Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <label className="sr-only" htmlFor="subscribe-email">Email</label>
@@ -141,7 +181,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex gap-2" role="group" aria-label="Frecuencia de envio">
-                  {(["weekly", "daily"] as const).map((f) => (
+                  {(["daily", "weekly"] as const).map((f) => (
                     <button
                       key={f}
                       type="button"
@@ -184,11 +224,9 @@ export default function Home() {
             {/* Right - Newsletter Preview */}
             <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <div className="relative">
-                {/* Glow behind card */}
                 <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/10 to-violet-500/10 rounded-3xl blur-2xl" />
 
                 <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm overflow-hidden">
-                  {/* Preview header */}
                   <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex gap-1.5">
@@ -203,19 +241,17 @@ export default function Home() {
                     </span>
                   </div>
 
-                  {/* Newsletter content */}
                   <div className="newsletter-preview relative max-h-[500px] overflow-hidden">
                     {newsletter ? (
                       <div
                         dangerouslySetInnerHTML={{ __html: newsletter.htmlContent }}
-                        className="[&_a]:pointer-events-none"
+                        className="[&_a]:pointer-events-none [&_img]:hidden"
                       />
                     ) : (
                       <div className="p-8">
                         <NewsletterPlaceholder />
                       </div>
                     )}
-                    {/* Fade-out gradient */}
                     <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none" />
                   </div>
                 </div>
@@ -224,30 +260,59 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Recent editions / Archivo */}
+        {recentNewsletters.length > 0 && (
+          <section id="archivo" className="py-16 border-t border-white/[0.04]">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-white/90">
+                Ediciones recientes
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {recentNewsletters.map((n) => (
+                <div
+                  key={n.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-indigo-500/20 transition-all"
+                >
+                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium w-fit shrink-0">
+                    {typeLabel[n.type] || n.type}
+                  </span>
+                  <span className="text-sm text-white/80 font-medium flex-1">
+                    {n.subject}
+                  </span>
+                  <span className="text-xs text-slate-500 shrink-0">
+                    {formatDate(n.sentAt || n.createdAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* What you get */}
         <section className="py-16 border-t border-white/[0.04]">
           <h2 className="text-2xl font-bold text-center mb-4 text-white/90">
-            Que incluye cada edicion
+            Que encuentras en cada edicion
           </h2>
-          <p className="text-slate-400 text-center mb-12 max-w-md mx-auto">
-            Tres secciones diseñadas para mantenerte al dia sin perder tiempo.
+          <p className="text-slate-400 text-center mb-12 max-w-lg mx-auto">
+            Tres secciones para que estes al dia sin scrollear 20 feeds. Lo lees en 5 minutos con tu cafe.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               {
                 icon: "🤖",
                 title: "AI & Tech News",
-                desc: "Las noticias mas relevantes de inteligencia artificial y tecnologia, con contexto y analisis.",
+                desc: "Lo mas relevante de inteligencia artificial y tecnologia. Con contexto, no solo titulares.",
               },
               {
                 icon: "💻",
                 title: "Dev Tips",
-                desc: "Snippets, herramientas y consejos practicos que puedes aplicar hoy en tu codigo.",
+                desc: "Herramientas, snippets y consejos que puedes aplicar hoy. Sin teoria de mas.",
               },
               {
                 icon: "🚀",
                 title: "Startups MX & SV",
-                desc: "Rondas de inversion, lanzamientos y movimientos del ecosistema en Mexico y Silicon Valley.",
+                desc: "Rondas, lanzamientos y movimientos del ecosistema en Mexico y Silicon Valley.",
               },
             ].map((f) => (
               <div
@@ -270,17 +335,17 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                quote: "Es lo primero que leo con mi cafe. En 5 minutos estoy al dia con todo lo que importa en tech.",
+                quote: "Es lo primero que abro con mi cafe. En 5 minutos ya se de que hablar en el standup.",
                 name: "Carlos M.",
                 role: "Senior Developer",
               },
               {
-                quote: "Me ahorra horas de scrollear Twitter y Hacker News. El resumen de startups MX no lo encuentras en ningun otro lado.",
+                quote: "Me ahorra horas de scrollear Twitter y HN. El resumen de startups MX no lo encuentras en ningun otro lado.",
                 name: "Ana R.",
                 role: "Product Manager",
               },
               {
-                quote: "Los dev tips son oro. Cada semana descubro alguna herramienta o patron que termino usando en produccion.",
+                quote: "Los dev tips son oro. Cada semana descubro una herramienta que termino usando en produccion.",
                 name: "Diego L.",
                 role: "Full Stack Engineer",
               },
@@ -305,7 +370,7 @@ export default function Home() {
         </section>
 
         {/* How it works */}
-        <section className="py-16 border-t border-white/[0.04]">
+        <section id="como-funciona" className="py-16 border-t border-white/[0.04]">
           <h2 className="text-2xl font-bold text-center mb-12 text-white/90">
             Como funciona
           </h2>
@@ -326,7 +391,7 @@ export default function Home() {
               {
                 step: "03",
                 title: "Directo a tu inbox",
-                desc: "Recibe tu newsletter perfectamente formateado cada manana (o cada semana si prefieres).",
+                desc: "Recibe tu newsletter formateado cada manana (o un digest semanal si prefieres).",
                 icon: "📬",
               },
             ].map((item) => (
@@ -345,7 +410,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Stats section — real data */}
+        {/* Stats */}
         <section className="py-16 border-t border-white/[0.04]">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -371,10 +436,10 @@ export default function Home() {
           <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/10 to-violet-500/10 rounded-3xl blur-2xl" />
           <div className="relative">
             <h2 className="text-2xl sm:text-3xl font-bold text-white/90 mb-3">
-              No te pierdas la siguiente edicion
+              Que brinca enterarse de lo que importa
             </h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Unete y recibe lo mas importante de tech, AI y startups directo en tu inbox.
+              Unete y empieza a recibir lo mejor de tech, AI y startups directo en tu inbox. Vamos a la cafeina.
             </p>
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
               <label className="sr-only" htmlFor="bottom-email">Email</label>
@@ -409,18 +474,25 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.04]">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-xs">
-              T
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white text-xs">
+                T
+              </div>
+              <span className="text-sm text-slate-500">
+                TechPulse MX &copy; {new Date().getFullYear()}
+              </span>
             </div>
-            <span className="text-sm text-slate-500">
-              TechPulse MX &copy; {new Date().getFullYear()}
-            </span>
+            {stats.subscriberCount > 0 && (
+              <p className="text-sm text-slate-400 text-center">
+                {stats.subscriberCount}+ profesionales en Mexico ya confian en nosotros
+              </p>
+            )}
+            <p className="text-xs text-slate-500">
+              Hecho con Next.js, Gemini AI y mucho cafe
+            </p>
           </div>
-          <p className="text-xs text-slate-500">
-            Hecho con Next.js, Gemini AI y mucho cafe
-          </p>
         </div>
       </footer>
     </div>
