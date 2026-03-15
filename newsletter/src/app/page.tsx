@@ -436,7 +436,7 @@ export default function Home() {
           <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/10 to-violet-500/10 rounded-3xl blur-2xl" />
           <div className="relative">
             <h2 className="text-2xl sm:text-3xl font-bold text-white/90 mb-3">
-              Que brinca enterarse de lo que importa
+              Que placer enterarse de lo que importa
             </h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
               Unete y empieza a recibir lo mejor de tech, AI y startups directo en tu inbox. Vamos a la cafeina.
