@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { SectionData, buildEmailShell } from "./gemini";
+import { TopicSlug } from "./topics";
 
 function getTransporter() {
   return nodemailer.createTransport({
@@ -86,18 +88,65 @@ export async function sendConfirmationEmail(
   });
 }
 
+export function assembleEmailHtml(
+  sections: SectionData[],
+  subscriberTopics: TopicSlug[],
+  subtitle: string = "Tu dosis de tech, AI y startups"
+): string {
+  const today = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const filteredSections = sections.filter((s) =>
+    subscriberTopics.includes(s.slug)
+  );
+
+  const sectionsHtml = filteredSections
+    .map((s) => s.htmlFragment)
+    .join("\n");
+
+  return buildEmailShell(subtitle, sectionsHtml, today);
+}
+
+export function assembleFullEmailHtml(
+  sections: SectionData[],
+  subtitle: string = "Tu dosis de tech, AI y startups"
+): string {
+  const today = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const sectionsHtml = sections.map((s) => s.htmlFragment).join("\n");
+  return buildEmailShell(subtitle, sectionsHtml, today);
+}
+
 export async function sendBulkEmails(
-  subscribers: { email: string; token: string }[],
+  subscribers: { email: string; token: string; topics: string[] }[],
   subject: string,
-  htmlTemplate: string,
+  sections: SectionData[],
   appUrl: string
 ) {
   const results: { email: string; status: string; error?: string }[] = [];
   for (const sub of subscribers) {
-    const personalizedHtml = htmlTemplate.replace(
-      /\{\{unsubscribe_url\}\}/g,
-      `${appUrl}/api/unsubscribe?token=${sub.token}`
-    );
+    const topicSlugs = sub.topics as TopicSlug[];
+    const html = assembleEmailHtml(sections, topicSlugs);
+
+    const personalizedHtml = html
+      .replace(
+        /\{\{unsubscribe_url\}\}/g,
+        `${appUrl}/api/unsubscribe?token=${sub.token}`
+      )
+      .replace(
+        /\{\{preferences_url\}\}/g,
+        `${appUrl}/preferences?token=${sub.token}`
+      );
+
     try {
       await sendEmail({ to: sub.email, subject, html: personalizedHtml });
       results.push({ email: sub.email, status: "sent" });

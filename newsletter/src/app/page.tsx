@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { TOPICS } from "@/lib/topics";
 
 interface RecentNewsletter {
   id: string;
@@ -13,6 +14,9 @@ interface RecentNewsletter {
 export default function Home() {
   const [email, setEmail] = useState("");
   const [frequency, setFrequency] = useState("weekly");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(TOPICS.map((t) => t.slug));
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [newsletter, setNewsletter] = useState<{
@@ -51,7 +55,7 @@ export default function Home() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, frequency }),
+        body: JSON.stringify({ email, frequency, topics: selectedTopics, customPrompt: customPrompt.trim() || undefined }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -198,6 +202,57 @@ export default function Home() {
                   ))}
                 </div>
 
+                {/* Topic picker */}
+                <div>
+                  <p className="text-xs text-slate-400 mb-2">Elige tus temas:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {TOPICS.map((topic) => (
+                      <button
+                        key={topic.slug}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTopics((prev) => {
+                            if (prev.includes(topic.slug)) {
+                              if (prev.length <= 1) return prev;
+                              return prev.filter((t) => t !== topic.slug);
+                            }
+                            return [...prev, topic.slug];
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                          selectedTopics.includes(topic.slug)
+                            ? "bg-indigo-500/20 border border-indigo-500/40 text-indigo-300"
+                            : "bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <span>{topic.emoji}</span>
+                        <span>{topic.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom prompt toggle */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomPrompt(!showCustomPrompt)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    {showCustomPrompt ? "- Ocultar personalizacion" : "+ Personaliza tu newsletter (opcional)"}
+                  </button>
+                  {showCustomPrompt && (
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Ej: Me interesan mas las noticias de Mexico que de Silicon Valley"
+                      rows={2}
+                      maxLength={500}
+                      className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all text-xs resize-none"
+                    />
+                  )}
+                </div>
+
                 {status === "success" && (
                   <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm animate-slide-up">
                     <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -292,36 +347,20 @@ export default function Home() {
         {/* What you get */}
         <section className="py-16 border-t border-white/[0.04]">
           <h2 className="text-2xl font-bold text-center mb-4 text-white/90">
-            Que encuentras en cada edicion
+            Elige los temas que te interesan
           </h2>
           <p className="text-slate-400 text-center mb-12 max-w-lg mx-auto">
-            Tres secciones para que estes al dia sin scrollear 20 feeds. Lo lees en 5 minutos con tu cafe.
+            5 secciones para que armes tu newsletter a tu medida. Elige las que quieras y lo lees en 5 minutos con tu cafe.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-              {
-                icon: "🤖",
-                title: "AI & Tech News",
-                desc: "Lo mas relevante de inteligencia artificial y tecnologia. Con contexto, no solo titulares.",
-              },
-              {
-                icon: "💻",
-                title: "Dev Tips",
-                desc: "Herramientas, snippets y consejos que puedes aplicar hoy. Sin teoria de mas.",
-              },
-              {
-                icon: "🚀",
-                title: "Startups MX & SV",
-                desc: "Rondas, lanzamientos y movimientos del ecosistema en Mexico y Silicon Valley.",
-              },
-            ].map((f) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TOPICS.map((topic) => (
               <div
-                key={f.title}
+                key={topic.slug}
                 className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-indigo-500/20 transition-all"
               >
-                <div className="text-3xl mb-3">{f.icon}</div>
-                <h3 className="font-semibold text-white/90 mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+                <div className="text-3xl mb-3">{topic.emoji}</div>
+                <h3 className="font-semibold text-white/90 mb-2">{topic.label}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{topic.description}</p>
               </div>
             ))}
           </div>

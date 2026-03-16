@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNewsletter } from "@/lib/gemini";
+import { assembleFullEmailHtml } from "@/lib/mailer";
 import { ingestNews } from "@/lib/news-ingester";
 
 export const maxDuration = 120;
@@ -20,13 +21,15 @@ export async function POST(req: NextRequest) {
       take: 7,
     });
 
-    const newsletter = await generateNewsletter(news, pastNewsletters);
+    const generated = await generateNewsletter(news, pastNewsletters);
+    const htmlContent = assembleFullEmailHtml(generated.sections);
 
     const saved = await prisma.newsletter.create({
       data: {
-        subject: newsletter.subject,
-        content: newsletter.content,
-        htmlContent: newsletter.htmlContent,
+        subject: generated.subject,
+        content: generated.content,
+        htmlContent,
+        sections: JSON.stringify(generated.sections),
       },
     });
 
@@ -34,9 +37,12 @@ export async function POST(req: NextRequest) {
       message: "Newsletter generado",
       id: saved.id,
       subject: saved.subject,
+      sectionsCount: generated.sections.length,
       newsIngested: {
         techAI: news.techAI.length,
         devTools: news.devTools.length,
+        frontend: news.frontend.length,
+        backend: news.backend.length,
         startups: news.startups.length,
       },
     });

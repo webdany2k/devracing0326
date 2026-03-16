@@ -8,6 +8,8 @@ export interface RawNewsItem {
 export interface IngestedNews {
   techAI: RawNewsItem[];
   devTools: RawNewsItem[];
+  frontend: RawNewsItem[];
+  backend: RawNewsItem[];
   startups: RawNewsItem[];
 }
 
@@ -19,6 +21,14 @@ const RSS_FEEDS = {
   devTools: [
     "https://news.google.com/rss/search?q=programming+developer+tools+software+engineering&hl=en-US&gl=US&ceid=US:en",
     "https://news.google.com/rss/search?q=JavaScript+TypeScript+Python+framework+2026&hl=en-US&gl=US&ceid=US:en",
+  ],
+  frontend: [
+    "https://news.google.com/rss/search?q=React+Vue+Angular+CSS+frontend+web+development&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=Next.js+Svelte+Tailwind+web+framework+2026&hl=en-US&gl=US&ceid=US:en",
+  ],
+  backend: [
+    "https://news.google.com/rss/search?q=cloud+infrastructure+Kubernetes+Docker+backend+API&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=database+PostgreSQL+Redis+DevOps+serverless+2026&hl=en-US&gl=US&ceid=US:en",
   ],
   startups: [
     "https://news.google.com/rss/search?q=startups+Mexico+tecnologia+inversion&hl=es-419&gl=MX&ceid=MX:es-419",
@@ -68,9 +78,11 @@ async function fetchFeed(url: string): Promise<RawNewsItem[]> {
 }
 
 export async function ingestNews(): Promise<IngestedNews> {
-  const [techAI, devTools, startups] = await Promise.all([
+  const [techAI, devTools, frontend, backend, startups] = await Promise.all([
     Promise.all(RSS_FEEDS.techAI.map(fetchFeed)).then((results) => results.flat()),
     Promise.all(RSS_FEEDS.devTools.map(fetchFeed)).then((results) => results.flat()),
+    Promise.all(RSS_FEEDS.frontend.map(fetchFeed)).then((results) => results.flat()),
+    Promise.all(RSS_FEEDS.backend.map(fetchFeed)).then((results) => results.flat()),
     Promise.all(RSS_FEEDS.startups.map(fetchFeed)).then((results) => results.flat()),
   ]);
 
@@ -88,6 +100,8 @@ export async function ingestNews(): Promise<IngestedNews> {
   return {
     techAI: dedup(techAI, 10),
     devTools: dedup(devTools, 8),
+    frontend: dedup(frontend, 8),
+    backend: dedup(backend, 8),
     startups: dedup(startups, 10),
   };
 }
@@ -103,6 +117,12 @@ ${formatSection(news.techAI)}
 
 ### Dev Tools & Programming:
 ${formatSection(news.devTools)}
+
+### Frontend & Web Development:
+${formatSection(news.frontend)}
+
+### Backend & Cloud Infrastructure:
+${formatSection(news.backend)}
 
 ### Startups Mexico & Silicon Valley:
 ${formatSection(news.startups)}`;

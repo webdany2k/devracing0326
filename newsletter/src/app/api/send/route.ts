@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendBulkEmails } from "@/lib/mailer";
+import { SectionData } from "@/lib/gemini";
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -26,13 +27,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Parse sections from stored JSON
+    let sections: SectionData[] = [];
+    try {
+      sections = JSON.parse(newsletter.sections);
+    } catch {
+      // Fallback: if sections aren't available, can't send personalized emails
+      return NextResponse.json(
+        { error: "Newsletter sin secciones estructuradas" },
+        { status: 500 }
+      );
+    }
+
     // Map newsletter type to subscriber frequency for filtering
     const frequency = newsletter.type === "weekly" ? "weekly" : "daily";
 
     // Get active and confirmed subscribers matching the newsletter frequency
     const subscribers = await prisma.subscriber.findMany({
       where: { active: true, confirmed: true, frequency },
-      select: { email: true, token: true },
+      select: { email: true, token: true, topics: true },
     });
 
     if (subscribers.length === 0) {
@@ -42,10 +55,22 @@ export async function POST(req: NextRequest) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://localhost:3000";
 
+    // Parse topics for each subscriber
+    const subscribersWithTopics = subscribers.map((sub) => {
+      let topics: string[] = ["techAI", "devTips", "startups"];
+      try {
+        const parsed = JSON.parse(sub.topics);
+        if (Array.isArray(parsed) && parsed.length > 0) topics = parsed;
+      } catch {
+        // fallback to defaults
+      }
+      return { email: sub.email, token: sub.token, topics };
+    });
+
     const results = await sendBulkEmails(
-      subscribers,
+      subscribersWithTopics,
       newsletter.subject,
-      newsletter.htmlContent,
+      sections,
       appUrl
     );
 

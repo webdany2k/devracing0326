@@ -9,15 +9,17 @@ datasource db {
 }
 
 model Subscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  frequency String   @default("weekly")
-  confirmed Boolean  @default(false)
-  active    Boolean  @default(true)
-  token     String   @unique @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  frequency    String   @default("weekly")
+  topics       String   @default("[\"techAI\",\"devTips\",\"startups\"]")
+  customPrompt String?
+  confirmed    Boolean  @default(false)
+  active       Boolean  @default(true)
+  token        String   @unique @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Newsletter {
@@ -25,6 +27,7 @@ model Newsletter {
   subject     String
   content     String
   htmlContent String
+  sections    String    @default("[]")
   type        String    @default("daily")
   sentAt      DateTime?
   createdAt   DateTime  @default(now())
