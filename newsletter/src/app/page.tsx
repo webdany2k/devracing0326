@@ -300,7 +300,7 @@ export default function Home() {
                     {newsletter ? (
                       <div
                         dangerouslySetInnerHTML={{ __html: newsletter.htmlContent }}
-                        className="[&_a]:pointer-events-none [&_img]:hidden"
+                        className="[&_a]:pointer-events-none [&_img]:hidden origin-top-left scale-[0.7] w-[143%]"
                       />
                     ) : (
                       <div className="p-8">
